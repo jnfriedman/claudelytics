@@ -1,0 +1,24 @@
+{
+  "rings": {
+    "primary": {
+      "description": "Anthropic's own channels. Highest signal. An item here is Anthropic SAYING something.",
+      "feeds": [
+        { "name": "Anthropic News",        "type": "announcement", "url": "https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_anthropic_news.xml" },
+        { "name": "Anthropic Engineering", "type": "engineering",   "url": "https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_anthropic_engineering.xml" },
+        { "name": "Anthropic Research",    "type": "research",      "url": "https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_anthropic_research.xml" },
+        { "name": "Claude Blog",           "type": "product",       "url": "https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_claude.xml" }
+      ],
+      "fallback_feeds": [
+        { "name": "Anthropic News (fallback)", "type": "announcement", "url": "https://raw.githubusercontent.com/taobojlen/anthropic-rss-feed/main/anthropic_news_rss.xml" }
+      ]
+    },
+    "press": {
+      "description": "The wider world covering Anthropic. Filtered to Anthropic/Claude mentions. An item here is the WORLD reacting.",
+      "keyword_filter": ["anthropic", "claude", "dario amodei", "constitutional ai"],
+      "feeds": [
+        { "name": "The Verge AI", "type": "press",    "url": "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml" },
+        { "name": "arXiv cs.AI",  "type": "research", "url": "http://export.arxiv.org/rss/cs.AI" }
+      ]
+    }
+  }
+}
