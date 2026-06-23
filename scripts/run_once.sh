@@ -13,10 +13,29 @@
 #
 # Requirements on the host:
 #   - claude (Claude Code CLI) on PATH
-#   - SLACK_WEBHOOK_URL exported (or it dry-runs and prints payloads)
+#   - ANTHROPIC_API_KEY in .env or exported in the environment
+#   - SLACK_WEBHOOK_URL in .env or exported (post_slack.py errors if absent)
 #
 set -euo pipefail
 cd "$(dirname "$0")/.."
+
+# Load .env (project root) -- .env takes priority over existing env vars.
+# Handles quoted values (single or double) and skips blank lines / comments.
+if [ -f ".env" ]; then
+  while IFS= read -r line || [ -n "$line" ]; do
+    [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
+    key="${line%%=*}"
+    val="${line#*=}"
+    val="${val#\"}" ; val="${val%\"}"
+    val="${val#\'}" ; val="${val%\'}"
+    export "$key"="$val"
+  done < ".env"
+fi
+
+if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
+  echo "error: ANTHROPIC_API_KEY not set in .env or environment" >&2
+  exit 1
+fi
 
 echo "===================== run @ $(date -u +%FT%TZ) ====================="
 
