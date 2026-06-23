@@ -21,16 +21,20 @@ cd "$(dirname "$0")/.."
 
 # Load .env (project root) -- .env takes priority over existing env vars.
 # Handles quoted values (single or double) and skips blank lines / comments.
-if [ -f ".env" ]; then
-  while IFS= read -r line || [ -n "$line" ]; do
-    [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
-    key="${line%%=*}"
-    val="${line#*=}"
-    val="${val#\"}" ; val="${val%\"}"
-    val="${val#\'}" ; val="${val%\'}"
-    export "$key"="$val"
-  done < ".env"
-fi
+# Try both .env and env filenames
+for envfile in ".env" "env"; do
+  if [ -f "$envfile" ]; then
+    while IFS= read -r line || [ -n "$line" ]; do
+      [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
+      key="${line%%=*}"
+      val="${line#*=}"
+      val="${val#\"}" ; val="${val%\"}"
+      val="${val#\'}" ; val="${val%\'}"
+      export "$key"="$val"
+    done < "$envfile"
+    break
+  fi
+done
 
 if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
   echo "error: ANTHROPIC_API_KEY not set in .env or environment" >&2
@@ -42,7 +46,8 @@ echo "===================== run @ $(date -u +%FT%TZ) ====================="
 # 1. Sense
 python3 scripts/fetch_feeds.py
 
-NEW=$(python3 -c "import json;print(len(json.load(open('state/new_items.json'))))" 2>/dev/null || echo 0)
+MEMORY_DIR="${HOME}/claudelytics-memory"
+NEW=$(python3 -c "import json;print(len(json.load(open('${MEMORY_DIR}/new_items.json'))))" 2>/dev/null || echo 0)
 echo "new items this cycle: $NEW"
 
 # 2. Think + act. Headless Claude Code, allowed to run our two scripts + edit state.
@@ -51,8 +56,8 @@ echo "new items this cycle: $NEW"
 claude -p \
   --dangerously-skip-permissions \
   "Run one Anthropic Emerging-Trends cycle exactly as specified in CLAUDE.md. \
-The new items are already in state/new_items.json (do not re-fetch). \
-Update state/trends.json, append to state/digest.md, and post any qualifying \
+The new items are already in ~/claudelytics-memory/new_items.json (do not re-fetch). \
+Update ~/claudelytics-memory/trends.json, append to ~/claudelytics-memory/digest.md, and post any qualifying \
 trends to Slack via scripts/post_slack.py. If nothing clears the bar, stay quiet \
 and just record the run."
 

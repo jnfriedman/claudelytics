@@ -30,12 +30,12 @@ is the agent's core judgment — and exactly what a one-shot summarizer can't do
         │  every N minutes
         ▼
   scripts/fetch_feeds.py   ── dumb, reliable SENSOR (stdlib only)
-        │  writes state/new_items.json (deduped vs state/seen.json)
+        │  writes ~/claudelytics-memory/new_items.json (deduped vs seen.json)
         ▼
   claude -p  (CLAUDE.md)   ── the BRAIN
-        │  • folds new items into state/trends.json (theme memory)
+        │  • folds new items into ~/claudelytics-memory/trends.json (theme memory)
         │  • recomputes momentum, decides what clears the "trend" bar
-        │  • appends to state/digest.md every run (the heartbeat)
+        │  • appends to ~/claudelytics-memory/digest.md every run (the heartbeat)
         ▼
   scripts/post_slack.py    ── posts ONLY qualifying trends (Block Kit)
 ```
@@ -71,10 +71,10 @@ the fetcher logs it and keeps going.
 
 ## Demo script (90 seconds)
 
-1. Show `state/trends.json` — "this is its memory; it's been watching."
+1. Show `~/claudelytics-memory/trends.json` — "this is its memory; it's been watching."
 2. `scripts/run_once.sh` — watch it fetch, reason, and post a trend to Slack live.
 3. Show the Slack message: headline + *why it matters* + cross-ring evidence.
-4. Show `state/digest.md` git history — "one line per cycle; it's been alive for hours."
+4. Show `~/claudelytics-memory/digest.md` — "one line per cycle; it's been alive for hours."
 5. The kicker: run it again with no new items → it correctly stays **silent**. "A good
    analyst is quiet most of the time and right when they speak."
 
@@ -89,4 +89,5 @@ the fetcher logs it and keeps going.
 | `scripts/run_once.sh` | One cycle (sensor → claude -p brain) |
 | `scripts/always_on.sh` | The daemon loop |
 | `scripts/seed.sh` | One-time cold-start primer |
-| `state/` | Memory: `seen.json`, `trends.json`, `digest.md` |
+| `~/claudelytics-memory/` | Memory: `seen.json`, `trends.json`, `digest.md`, `new_items.json` |
+| `state/` | Template state files (repo only, not used at runtime) |

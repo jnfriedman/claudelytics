@@ -22,7 +22,7 @@ from xml.etree import ElementTree as ET
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(SCRIPT_DIR)          # project root = parent of scripts/
-STATE = os.path.join(ROOT, "state")
+STATE = os.path.expanduser("~/claudelytics-memory")
 os.makedirs(STATE, exist_ok=True)
 
 SEEN_PATH = os.path.join(STATE, "seen.json")

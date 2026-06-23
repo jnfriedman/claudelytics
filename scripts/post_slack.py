@@ -10,7 +10,7 @@ Usage:
     echo '<json payload>' | python3 post_slack.py
     python3 post_slack.py --dry-run < alert.json
 """
-import json, os, sys, urllib.request
+import json, os, sys, urllib.request, urllib.error
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(SCRIPT_DIR)
@@ -33,16 +33,31 @@ def _load_dotenv(path):
 
 
 def _resolve_webhook():
+    # Try .env in repo root, then env file, then fall back to env var
     env_file = _load_dotenv(os.path.join(ROOT, ".env"))
+    if not env_file:
+        env_file = _load_dotenv(os.path.join(ROOT, "env"))
     url = env_file.get("SLACK_WEBHOOK_URL") or os.environ.get("SLACK_WEBHOOK_URL", "").strip()
     if not url:
-        print("error: SLACK_WEBHOOK_URL not set in .env or environment", file=sys.stderr)
+        print("error: SLACK_WEBHOOK_URL not set in .env/env or environment", file=sys.stderr)
         sys.exit(1)
     return url
 
 
 WEBHOOK = _resolve_webhook()
 DRY = "--dry-run" in sys.argv
+
+
+def validate_url(url):
+    """Quick check if URL is accessible (returns True if 200-399, False otherwise)."""
+    if not url or not url.startswith("http"):
+        return False
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "claudelytics/1.0"}, method="HEAD")
+        with urllib.request.urlopen(req, timeout=5) as r:
+            return 200 <= r.status < 400
+    except (urllib.error.URLError, urllib.error.HTTPError, Exception):
+        return False
 
 
 def build_blocks(alert):
@@ -61,14 +76,26 @@ def build_blocks(alert):
         ring_tag = "🅰️" if e.get("ring") == "primary" else "🌍"
         link = e.get("link") or ""
         title = e.get("title", "")[:90]
-        ev_lines.append(f"{ring_tag} <{link}|{title}>  _({e.get('source','')})_" if link
-                        else f"{ring_tag} {title}  _({e.get('source','')})_")
+        # Validate URL before including link
+        if link and validate_url(link):
+            ev_lines.append(f"{ring_tag} <{link}|{title}>  _({e.get('source','')})_")
+        else:
+            # If URL is invalid, show title without link
+            ev_lines.append(f"{ring_tag} {title}  _({e.get('source','')})_ [link unavailable]")
     if ev_lines:
         blocks.append({"type": "section", "text": {"type": "mrkdwn",
             "text": "*Evidence:*\n" + "\n".join(ev_lines)}})
     blocks.append({"type": "context", "elements": [{"type": "mrkdwn",
         "text": "🅰️ = Anthropic direct  ·  🌍 = press/world  ·  _Anthropic Emerging-Trends Agent_"}]})
-    return {"blocks": blocks}
+
+    # Build plain text message for user_messages field
+    user_msg = f"{head} {alert['headline']}\n\n"
+    if alert.get("so_what"):
+        user_msg += f"Why it matters: {alert['so_what']}\n\n"
+    if ev_lines:
+        user_msg += "Evidence:\n" + "\n".join(ev_lines)
+
+    return {"blocks": blocks, "user_messages": user_msg}
 
 
 def main():
